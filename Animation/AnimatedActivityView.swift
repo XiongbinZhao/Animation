@@ -48,13 +48,13 @@ class AnimatedActivityIndicatorView: UIView {
         let imageNames = ["Toronto", "London", "Newyork", "Toronto"]
         
         let cityHeightRatio = CGFloat(120.00/568.00)
-        cityImagesContainer.frame.size = CGSize(width: frame.width, height: frame.height * cityHeightRatio)
+        cityImagesContainer.frame.size = CGSize(width: frame.size.width, height: frame.height * cityHeightRatio)
         cityImagesContainer.frame.origin = CGPoint(x: 0, y: frame.height - cityImagesContainer.frame.height - 40)
         cityImagesContainer.contentSize = CGSize(width: frame.size.width * CGFloat(imageNames.count), height: cityImagesContainer.frame.height)
         cityImagesContainer.showsHorizontalScrollIndicator = false
         cityImagesContainer.userInteractionEnabled = false
         
-        let lineBarView = UIView(frame: CGRect(x: 0, y: cityImagesContainer.frame.height - 1, width: cityImagesContainer.contentSize.width, height: 1))
+        let lineBarView = UIView(frame: CGRect(x: 0, y: cityImagesContainer.frame.height - 1, width: cityImagesContainer.frame.width * CGFloat(imageNames.count), height: 1))
         lineBarView.backgroundColor = UIColor(red: 0.800, green: 0.808, blue: 0.820, alpha: 1.00)
         cityImagesContainer.addSubview(lineBarView)
         
@@ -143,10 +143,20 @@ class AnimatedActivityIndicatorView: UIView {
                     if self?.currentZPosition == nil {
                         self?.currentZPosition = NSNumber(double: acceleration.z)
                     } else {
+                        var diff = (self?.currentZPosition?.doubleValue)! - acceleration.z
+                        diff = diff > 0 ? diff : -diff
                         if acceleration.z > self?.currentZPosition?.doubleValue {
-                            //                            self?.planeImageView.image = UIImage(named: "plane2")
+//                            if diff > 0.15 {
+//                                self?.planeImageView.image = UIImage(named: "plane2")
+//                            } else {
+//                                self?.planeImageView.image = UIImage(named: "plane1")
+//                            }
                         } else {
-                            //                            self?.planeImageView.image = UIImage(named: "plane4")
+//                            if diff > 0.15 {
+//                                self?.planeImageView.image = UIImage(named: "plane4")
+//                            } else {
+//                                self?.planeImageView.image = UIImage(named: "plane1")
+//                            }
                         }
                     }
                 }
