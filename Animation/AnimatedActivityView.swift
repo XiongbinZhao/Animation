@@ -132,8 +132,9 @@ class AnimatedActivityIndicatorView: UIView {
         searchingLabel.adjustsFontSizeToFitWidth = true
         addSubview(searchingLabel)
         
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.startAnimating), name: UIApplicationDidBecomeActiveNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.stopAnimating), name: UIApplicationWillResignActiveNotification, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.startAnimating), name:UIApplicationWillEnterForegroundNotification, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.stopAnimating), name:
+            UIApplicationDidEnterBackgroundNotification, object: nil)
         
         if motionManager.accelerometerAvailable {
             motionManager.accelerometerUpdateInterval = 0.2
@@ -188,7 +189,7 @@ class AnimatedActivityIndicatorView: UIView {
         let cloudAnim = CABasicAnimation(keyPath: "transform.translation.x")
         cloudAnim.fromValue = NSNumber(float: 0.0)
         cloudAnim.toValue = NSNumber(float: Float(self.cloudImagesContainer.frame.origin.x - (self.frame.width + 30)))
-        cloudAnim.duration = 3.5
+        cloudAnim.duration = 4.0
         cloudAnim.repeatCount = Float.infinity
         cloudImagesContainer.layer.addAnimation(cloudAnim, forKey: "Clouds")
         
