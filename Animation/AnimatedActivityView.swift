@@ -16,7 +16,7 @@ class AnimatedActivityIndicatorView: UIView {
     
     private let planeImageView = UIImageView()
     private let cloudImagesContainer = UIView()
-    private let cityImagesContainer = UIScrollView()
+    private let cityImagesContainer = UIView()
     private let sunImagesContainer = UIView()
     private let sunImageView = UIImageView(image: UIImage(named: "Sun"))
     private weak var cityChangeTimer: NSTimer?
@@ -45,14 +45,14 @@ class AnimatedActivityIndicatorView: UIView {
         self.backgroundColor = UIColor(red: 0.902, green: 0.914, blue: 0.925, alpha: 1.00)
         
         //Cities Images
-        let imageNames = ["Toronto", "London", "Newyork", "Toronto"]
+        let imageNames = ["Toronto", "Newyork", "London", "Toronto"]
         
         let cityHeightRatio = CGFloat(120.00/568.00)
-        cityImagesContainer.frame.size = CGSize(width: frame.size.width, height: frame.height * cityHeightRatio)
+        cityImagesContainer.frame.size = CGSize(width: frame.size.width * CGFloat(imageNames.count), height: frame.height * cityHeightRatio)
         cityImagesContainer.frame.origin = CGPoint(x: 0, y: frame.height - cityImagesContainer.frame.height - 40)
-        cityImagesContainer.contentSize = CGSize(width: frame.size.width * CGFloat(imageNames.count), height: cityImagesContainer.frame.height)
-        cityImagesContainer.showsHorizontalScrollIndicator = false
-        cityImagesContainer.userInteractionEnabled = false
+        
+        cityImagesContainer.layer.anchorPoint = CGPointZero
+        cityImagesContainer.layer.position = CGPoint(x: 0, y: frame.height - cityImagesContainer.frame.height - 40)
         
         let lineBarView = UIView(frame: CGRect(x: 0, y: cityImagesContainer.frame.height - 1, width: cityImagesContainer.frame.width * CGFloat(imageNames.count), height: 1))
         lineBarView.backgroundColor = UIColor(red: 0.800, green: 0.808, blue: 0.820, alpha: 1.00)
@@ -193,7 +193,7 @@ class AnimatedActivityIndicatorView: UIView {
         cloudImagesContainer.layer.addAnimation(cloudAnim, forKey: "Clouds")
         
         //Animation for sun
-        UIView.animateWithDuration(30, animations: {
+        UIView.animateWithDuration(35, animations: {
             var frame = self.sunImageView.frame
             frame.origin.x = -self.sunImageView.frame.width
             self.sunImageView.frame = frame
@@ -213,19 +213,17 @@ class AnimatedActivityIndicatorView: UIView {
     
     func changeCity() {
         //Animation for cities
-        UIView.animateWithDuration(1.0,
-                                   delay: 0.0,
-                                   options: [.CurveEaseOut],
-                                   animations: {
-                                    self.cityImagesContainer.contentOffset = CGPoint(x: self.cityImagesContainer.contentOffset.x + self.frame.width, y:self.cityImagesContainer.contentOffset.y)
-            },
-                                   completion: {finished in
-                                    if(finished) {
-                                        if self.cityImagesContainer.contentOffset.x == 3 * self.frame.width {
-                                            self.cityImagesContainer.contentOffset = CGPointZero
-                                        }
-                                    }
-        })
+        var oldPosition = self.cityImagesContainer.layer.position
+        oldPosition.x = oldPosition.x == -3 * self.frame.width ? 0 : oldPosition.x
         
+        let cityAnim = CABasicAnimation(keyPath: "position.x")
+        cityAnim.fromValue = oldPosition.x
+        cityAnim.toValue = oldPosition.x - self.frame.width
+        cityAnim.duration = 1.0
+        cityAnim.timingFunction = CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.25, 1.00)
+        
+        self.cityImagesContainer.layer.addAnimation(cityAnim, forKey: "City")
+        
+        self.cityImagesContainer.layer.position = CGPoint(x: oldPosition.x - self.frame.width, y: oldPosition.y)
     }
 }

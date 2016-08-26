@@ -30,6 +30,10 @@ class ViewControllerB: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    @IBAction func buttonPressed(sender: AnyObject) {
+        mView.changeCity()
+    }
+    
     @IBAction func dismiss(sender: AnyObject) {
         self.dismissViewControllerAnimated(true, completion: nil)
     }

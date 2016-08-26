@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10116" systemVersion="15G31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="BYZ-38-t0r">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10117" systemVersion="15G31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="BYZ-38-t0r">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
@@ -56,10 +56,19 @@
                                     <action selector="dismiss:" destination="Zfx-jp-62k" eventType="touchUpInside" id="imp-Yh-Hqa"/>
                                 </connections>
                             </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xee-0P-4na">
+                                <rect key="frame" x="554" y="20" width="46" height="30"/>
+                                <state key="normal" title="Button"/>
+                                <connections>
+                                    <action selector="buttonPressed:" destination="Zfx-jp-62k" eventType="touchUpInside" id="3iP-w8-jyC"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstAttribute="trailingMargin" secondItem="xee-0P-4na" secondAttribute="trailing" constant="-20" id="Fzw-Fb-m5q"/>
                             <constraint firstItem="evk-Kf-24r" firstAttribute="top" secondItem="Hjy-Cj-sZc" secondAttribute="bottom" id="IBo-TI-HHb"/>
+                            <constraint firstItem="xee-0P-4na" firstAttribute="top" secondItem="Hjy-Cj-sZc" secondAttribute="bottom" id="hN8-By-lD8"/>
                             <constraint firstItem="evk-Kf-24r" firstAttribute="leading" secondItem="diD-yz-Frm" secondAttribute="leadingMargin" constant="-20" id="htS-Ca-UcZ"/>
                         </constraints>
                     </view>
