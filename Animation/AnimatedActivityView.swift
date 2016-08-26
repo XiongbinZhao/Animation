@@ -9,10 +9,14 @@
 import UIKit
 import CoreMotion
 
-class AnimatedActivityIndicatorView: UIView {
+class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     
     var searchingString = "Searching Flights"
     var indicatorCenter = CGPointZero
+    
+    private let planeTopImage = UIImage(named: "plane4")
+    private let planeMiddleImage = UIImage(named: "plane1")
+    private let planeBottomImage = UIImage(named: "plane2")
     
     private let planeImageView = UIImageView()
     private let cloudImagesContainer = UIView()
@@ -21,7 +25,10 @@ class AnimatedActivityIndicatorView: UIView {
     private let sunImageView = UIImageView(image: UIImage(named: "Sun"))
     private weak var cityChangeTimer: NSTimer?
     private var currentZPosition: NSNumber?
-    private var addedToView = false
+    private var ifAddedToView = false
+    
+    private var gravityBehavior: UIGravityBehavior!
+    private let gravityAnimator = UIDynamicAnimator()
     
     let motionManager = CMMotionManager()
     
@@ -31,10 +38,10 @@ class AnimatedActivityIndicatorView: UIView {
     }
     
     override func didMoveToWindow() {
-        if addedToView {
+        if ifAddedToView {
             cityChangeTimer?.invalidate()
         } else {
-            addedToView = true
+            ifAddedToView = true
         }
     }
     
@@ -98,7 +105,7 @@ class AnimatedActivityIndicatorView: UIView {
         sunImageView.frame.origin = CGPoint(x: frame.width - 50 - sunImageView.frame.width, y: cloudImagesContainer.frame.origin.y - 5)
 
         //Plane Images
-        guard let planeImage = UIImage(named: "plane1") else {
+        guard let planeImage = planeMiddleImage else {
             return
         }
         
@@ -132,36 +139,80 @@ class AnimatedActivityIndicatorView: UIView {
         searchingLabel.adjustsFontSizeToFitWidth = true
         addSubview(searchingLabel)
         
+        //NotificationCenter
         NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.startAnimating), name:UIApplicationWillEnterForegroundNotification, object: nil)
         NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.stopAnimating), name:
             UIApplicationDidEnterBackgroundNotification, object: nil)
         
+        //Gravity Behavior
+        gravityBehavior = UIGravityBehavior(items: [planeImageView])
+        gravityBehavior.magnitude = 0.0
+        self.gravityAnimator.addBehavior(gravityBehavior)
+        
+        let collisionBehavior = UICollisionBehavior(items: [planeImageView])
+        let leftUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.origin.x, y: cloudImagesContainer.frame.origin.y + 7)
+        let rightUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + 7)
+        let leftLowerCloudPoint = CGPoint(x: 0, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - 7)
+        let rightLowerCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - 7)
+        collisionBehavior.addBoundaryWithIdentifier("upperBoundary", fromPoint: leftUpperCloudPoint, toPoint: rightUpperCloudPoint)
+        collisionBehavior.addBoundaryWithIdentifier("lowerBoundary", fromPoint: leftLowerCloudPoint, toPoint: rightLowerCloudPoint)
+        collisionBehavior.collisionDelegate = self
+        self.gravityAnimator.addBehavior(collisionBehavior)
+        
+        let itemBehavior = UIDynamicItemBehavior(items: [planeImageView])
+        itemBehavior.elasticity = 0.0
+        self.gravityAnimator.addBehavior(itemBehavior)
+
+        //CMMotionManager
         if motionManager.accelerometerAvailable {
             motionManager.accelerometerUpdateInterval = 0.2
-            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue()) {
-                [weak self] (data: CMAccelerometerData?, error: NSError?) in
-                if let acceleration = data?.acceleration {
-                    if self?.currentZPosition == nil {
-                        self?.currentZPosition = NSNumber(double: acceleration.z)
-                    } else {
-                        var diff = (self?.currentZPosition?.doubleValue)! - acceleration.z
-                        diff = diff > 0 ? diff : -diff
-                        if acceleration.z > self?.currentZPosition?.doubleValue {
-//                            if diff > 0.15 {
-//                                self?.planeImageView.image = UIImage(named: "plane2")
-//                            } else {
-//                                self?.planeImageView.image = UIImage(named: "plane1")
-//                            }
-                        } else {
-//                            if diff > 0.15 {
-//                                self?.planeImageView.image = UIImage(named: "plane4")
-//                            } else {
-//                                self?.planeImageView.image = UIImage(named: "plane1")
-//                            }
-                        }
+            motionManager.gyroUpdateInterval = 0.2
+            
+            motionManager.startGyroUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
+                [weak self] (data: CMGyroData?, error: NSError?) in
+                if let rotation = data?.rotationRate {
+                    if rotation.x >= 1 {
+                        //Down
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.015)
+                        self?.planeImageView.image = self?.planeMiddleImage
+                    } else if rotation.x <= -1 {
+                        //Up
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.015)
+                        self?.planeImageView.image = self?.planeMiddleImage
                     }
                 }
-            }
+            })
+            
+//            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue()) {
+//                [weak self] (data: CMAccelerometerData?, error: NSError?) in
+//                if let acceleration = data?.acceleration {
+//                    if self?.currentZPosition == nil {
+//                        self?.currentZPosition = NSNumber(double: acceleration.z)
+//                    } else {
+//                        var diff = self!.currentZPosition!.doubleValue - acceleration.z
+//                        diff = diff > 0 ? diff : diff
+//                        if acceleration.z > self?.currentZPosition?.doubleValue {
+//                            if diff > 0.15 {
+//                                self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.02)
+//                                self?.planeImageView.image = UIImage(named: "plane2")
+//                            } else {
+//                                self?.gravityBehavior.magnitude = 0.0
+//                                self?.planeImageView.image = UIImage(named: "plane1")
+//                            }
+//                        } else {
+//                            if diff > 0.15 {
+//                                self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.02)
+//                                self?.planeImageView.image = UIImage(named: "plane4")
+//                            } else {
+//                                self?.gravityBehavior.magnitude = 0.0
+//                                self?.planeImageView.image = UIImage(named: "plane1")
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+            
+            
         }
     }
     
@@ -227,4 +278,18 @@ class AnimatedActivityIndicatorView: UIView {
         
         self.cityImagesContainer.layer.position = CGPoint(x: oldPosition.x - self.frame.width, y: oldPosition.y)
     }
+    
+    //MARK: UICollisionBehabivor Delegate
+    func collisionBehavior(behavior: UICollisionBehavior, beganContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, atPoint p: CGPoint)
+    {
+        if let identifier = identifier as? String {
+            if identifier == "upperBoundary" {
+                self.planeImageView.image = self.planeTopImage
+            } else {
+                self.planeImageView.image = self.planeBottomImage
+            }
+        }
+    }
+    
+    
 }
