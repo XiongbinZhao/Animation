@@ -174,11 +174,11 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                     if rotation.x >= 1 {
                         //Down
                         self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.015)
-                        self?.planeImageView.image = self?.planeMiddleImage
+                        self?.planeImageView.image = self?.planeBottomImage
                     } else if rotation.x <= -1 {
                         //Up
                         self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.015)
-                        self?.planeImageView.image = self?.planeMiddleImage
+                        self?.planeImageView.image = self?.planeTopImage
                     }
                 }
             })
@@ -282,13 +282,16 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     //MARK: UICollisionBehabivor Delegate
     func collisionBehavior(behavior: UICollisionBehavior, beganContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, atPoint p: CGPoint)
     {
-        if let identifier = identifier as? String {
-            if identifier == "upperBoundary" {
-                self.planeImageView.image = self.planeTopImage
-            } else {
-                self.planeImageView.image = self.planeBottomImage
-            }
-        }
+//        if let identifier = identifier as? String {
+//            if identifier == "upperBoundary" {
+//                self.planeImageView.image = self.planeTopImage
+//            } else {
+//                self.planeImageView.image = self.planeBottomImage
+//            }
+//        }
+        
+        self.planeImageView.image = self.planeMiddleImage
+
     }
     
     
