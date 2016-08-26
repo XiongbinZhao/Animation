@@ -149,11 +149,13 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         gravityBehavior.magnitude = 0.0
         self.gravityAnimator.addBehavior(gravityBehavior)
         
+        let planeBoundaryOffset = CGFloat(3.0)
+        
         let collisionBehavior = UICollisionBehavior(items: [planeImageView])
-        let leftUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.origin.x, y: cloudImagesContainer.frame.origin.y + 7)
-        let rightUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + 7)
-        let leftLowerCloudPoint = CGPoint(x: 0, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - 7)
-        let rightLowerCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - 7)
+        let leftUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.origin.x, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
+        let rightUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
+        let leftLowerCloudPoint = CGPoint(x: 0, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
+        let rightLowerCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
         collisionBehavior.addBoundaryWithIdentifier("upperBoundary", fromPoint: leftUpperCloudPoint, toPoint: rightUpperCloudPoint)
         collisionBehavior.addBoundaryWithIdentifier("lowerBoundary", fromPoint: leftLowerCloudPoint, toPoint: rightLowerCloudPoint)
         collisionBehavior.collisionDelegate = self
@@ -173,12 +175,20 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                 if let rotation = data?.rotationRate {
                     if rotation.x >= 1 {
                         //Down
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.015)
-                        self?.planeImageView.image = self?.planeBottomImage
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.02)
+                        
+                        if self?.planeImageView.image != self?.planeBottomImage {
+                            self?.planeImageView.image = self?.planeBottomImage
+                        }
+                        
                     } else if rotation.x <= -1 {
                         //Up
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.015)
-                        self?.planeImageView.image = self?.planeTopImage
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.02)
+                        
+                        if self?.planeImageView.image != self?.planeTopImage {
+                            self?.planeImageView.image = self?.planeTopImage
+                        }
+                        
                     }
                 }
             })
@@ -211,8 +221,6 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
 //                    }
 //                }
 //            }
-            
-            
         }
     }
     
@@ -282,17 +290,15 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     //MARK: UICollisionBehabivor Delegate
     func collisionBehavior(behavior: UICollisionBehavior, beganContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, atPoint p: CGPoint)
     {
-//        if let identifier = identifier as? String {
-//            if identifier == "upperBoundary" {
-//                self.planeImageView.image = self.planeTopImage
-//            } else {
-//                self.planeImageView.image = self.planeBottomImage
-//            }
-//        }
-        
-        self.planeImageView.image = self.planeMiddleImage
-
+        self.planeImageView.image = planeMiddleImage
     }
     
-    
+    func collisionBehavior(behavior: UICollisionBehavior, endedContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?)
+    {
+        if let identifier = identifier as? String where identifier == "upperBoundary"{
+            self.planeImageView.image = planeBottomImage
+        } else {
+            self.planeImageView.image = planeTopImage
+        }
+    }
 }
