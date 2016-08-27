@@ -17,32 +17,22 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     private let planeTopImage = UIImage(named: "plane4")
     private let planeMiddleImage = UIImage(named: "plane1")
     private let planeBottomImage = UIImage(named: "plane2")
-    
     private let planeImageView = UIImageView()
+    
     private let cloudImagesContainer = UIView()
+    
     private let cityImagesContainer = UIView()
+    
     private let sunImagesContainer = UIView()
     private let sunImageView = UIImageView(image: UIImage(named: "Sun"))
-    private weak var cityChangeTimer: NSTimer?
-    private var currentZPosition: NSNumber?
-    private var ifAddedToView = false
     
     private var gravityBehavior: UIGravityBehavior!
     private let gravityAnimator = UIDynamicAnimator()
     
-    let motionManager = CMMotionManager()
+    private let motionManager = CMMotionManager()
     
     deinit {
-        NSNotificationCenter.defaultCenter().removeObserver(self)
         motionManager.stopAccelerometerUpdates()
-    }
-    
-    override func didMoveToWindow() {
-        if ifAddedToView {
-            cityChangeTimer?.invalidate()
-        } else {
-            ifAddedToView = true
-        }
     }
     
     override init(frame: CGRect) {
@@ -103,6 +93,8 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         let length = widthRatio * frame.width
         sunImageView.frame.size = CGSize(width: length, height: length)
         sunImageView.frame.origin = CGPoint(x: frame.width - 50 - sunImageView.frame.width, y: cloudImagesContainer.frame.origin.y - 5)
+        sunImageView.layer.anchorPoint = CGPoint(x: 0, y: 0)
+        sunImageView.layer.position = CGPoint(x: frame.width - 50 - sunImageView.frame.width, y: cloudImagesContainer.frame.origin.y - 5)
 
         //Plane Images
         guard let planeImage = planeMiddleImage else {
@@ -138,11 +130,6 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         searchingLabel.font = UIFont.systemFontOfSize(22.0)
         searchingLabel.adjustsFontSizeToFitWidth = true
         addSubview(searchingLabel)
-        
-        //NotificationCenter
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.startAnimating), name:UIApplicationWillEnterForegroundNotification, object: nil)
-        NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(self.stopAnimating), name:
-            UIApplicationDidEnterBackgroundNotification, object: nil)
         
         //Gravity Behavior
         gravityBehavior = UIGravityBehavior(items: [planeImageView])
@@ -192,35 +179,6 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                     }
                 }
             })
-            
-//            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue()) {
-//                [weak self] (data: CMAccelerometerData?, error: NSError?) in
-//                if let acceleration = data?.acceleration {
-//                    if self?.currentZPosition == nil {
-//                        self?.currentZPosition = NSNumber(double: acceleration.z)
-//                    } else {
-//                        var diff = self!.currentZPosition!.doubleValue - acceleration.z
-//                        diff = diff > 0 ? diff : diff
-//                        if acceleration.z > self?.currentZPosition?.doubleValue {
-//                            if diff > 0.15 {
-//                                self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.02)
-//                                self?.planeImageView.image = UIImage(named: "plane2")
-//                            } else {
-//                                self?.gravityBehavior.magnitude = 0.0
-//                                self?.planeImageView.image = UIImage(named: "plane1")
-//                            }
-//                        } else {
-//                            if diff > 0.15 {
-//                                self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.02)
-//                                self?.planeImageView.image = UIImage(named: "plane4")
-//                            } else {
-//                                self?.gravityBehavior.magnitude = 0.0
-//                                self?.planeImageView.image = UIImage(named: "plane1")
-//                            }
-//                        }
-//                    }
-//                }
-//            }
         }
     }
     
@@ -228,21 +186,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         super.init(coder: aDecoder)
     }
     
-    func stopAnimating() {
-        if let cityChangeTimer = cityChangeTimer {
-            cityChangeTimer.invalidate()
-        }
-    }
-    
     func startAnimating() {
-        //NSTimer for animating cities
-        if var cityChangeTimer = cityChangeTimer {
-            if !cityChangeTimer.valid {
-                cityChangeTimer = NSTimer.scheduledTimerWithTimeInterval(3.0, target: self, selector: #selector(self.changeCity), userInfo: nil, repeats: true)
-            }
-        } else {
-            cityChangeTimer = NSTimer.scheduledTimerWithTimeInterval(3.0, target: self, selector: #selector(self.changeCity), userInfo: nil, repeats: true)
-        }
         
         //Animation for clouds
         let cloudAnim = CABasicAnimation(keyPath: "transform.translation.x")
@@ -250,41 +194,58 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         cloudAnim.toValue = NSNumber(float: Float(self.cloudImagesContainer.frame.origin.x - (self.frame.width + 30)))
         cloudAnim.duration = 4.0
         cloudAnim.repeatCount = Float.infinity
+        cloudAnim.fillMode = kCAFillModeForwards
+        cloudAnim.removedOnCompletion = false
         cloudImagesContainer.layer.addAnimation(cloudAnim, forKey: "Clouds")
         
         //Animation for sun
-        UIView.animateWithDuration(35, animations: {
-            var frame = self.sunImageView.frame
-            frame.origin.x = -self.sunImageView.frame.width
-            self.sunImageView.frame = frame
-            
-            }, completion: {(finished) in
-                var frame = self.sunImageView.frame
-                frame.origin.x = self.frame.width
-                self.sunImageView.frame = frame
-                
-                UIView.animateWithDuration(20, animations: {
-                    var frame = self.sunImageView.frame
-                    frame.origin.x = self.frame.width - self.sunImageView.frame.width - 50
-                    self.sunImageView.frame = frame
-                })
-        })
-    }
-    
-    func changeCity() {
+        let sunAnim1 = CABasicAnimation(keyPath: "position.x")
+        sunAnim1.toValue = -self.sunImageView.frame.width
+        sunAnim1.duration = 35
+        sunAnim1.beginTime = 0
+        sunAnim1.fillMode = kCAFillModeForwards
+        sunAnim1.removedOnCompletion = false
+        
+        let sunAnim2 = CABasicAnimation(keyPath: "position.x")
+        sunAnim2.fromValue = self.frame.width
+        sunAnim2.toValue = self.frame.width - self.sunImageView.frame.width - 50
+        sunAnim2.duration = 15
+        sunAnim2.beginTime = 35
+        sunAnim2.fillMode = kCAFillModeForwards
+        sunAnim2.removedOnCompletion = false
+        
+        let sunGroupAnim = CAAnimationGroup()
+        sunGroupAnim.animations = [sunAnim1, sunAnim2]
+        sunGroupAnim.duration = 50
+        sunGroupAnim.repeatCount = Float.infinity
+        sunGroupAnim.fillMode =  kCAFillModeForwards
+        sunGroupAnim.removedOnCompletion = false
+        
+        self.sunImageView.layer.addAnimation(sunGroupAnim, forKey: "Sun")
+        
         //Animation for cities
-        var oldPosition = self.cityImagesContainer.layer.position
-        oldPosition.x = oldPosition.x == -3 * self.frame.width ? 0 : oldPosition.x
+        var animationsArray = [CABasicAnimation]()
+        for i in 0..<3 {
+            let anim = CABasicAnimation(keyPath: "position.x")
+            anim.fromValue = NSNumber(double: Double(-i) * Double(self.frame.width))
+            anim.byValue = -self.frame.width
+            anim.duration = 1.0
+            anim.timingFunction = CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.25, 1.00)
+            anim.beginTime = Double(i) * 4 + 3
+            anim.fillMode = kCAFillModeForwards
+            anim.removedOnCompletion = false
+            animationsArray.append(anim)
+        }
         
-        let cityAnim = CABasicAnimation(keyPath: "position.x")
-        cityAnim.fromValue = oldPosition.x
-        cityAnim.toValue = oldPosition.x - self.frame.width
-        cityAnim.duration = 1.0
-        cityAnim.timingFunction = CAMediaTimingFunction(controlPoints: 0.0, 0.0, 0.25, 1.00)
+        let group = CAAnimationGroup()
+        group.animations = animationsArray
+        group.duration = 12
+        group.beginTime = CACurrentMediaTime()
+        group.repeatCount = Float.infinity
+        group.fillMode = kCAFillModeForwards
+        group.removedOnCompletion = false
         
-        self.cityImagesContainer.layer.addAnimation(cityAnim, forKey: "City")
-        
-        self.cityImagesContainer.layer.position = CGPoint(x: oldPosition.x - self.frame.width, y: oldPosition.y)
+        self.cityImagesContainer.layer.addAnimation(group, forKey: "City")
     }
     
     //MARK: UICollisionBehabivor Delegate

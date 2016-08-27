@@ -31,7 +31,7 @@ class ViewControllerB: UIViewController {
     }
     
     @IBAction func buttonPressed(sender: AnyObject) {
-        mView.changeCity()
+
     }
     
     @IBAction func dismiss(sender: AnyObject) {
