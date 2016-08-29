@@ -208,7 +208,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                 if let rotation = data?.rotationRate {
                     if rotation.x >= 1 {
                         //Down
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.02)
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.03)
                         
                         if self?.planeImageView.image != self?.planeBottomImage {
                             self?.planeImageView.image = self?.planeBottomImage
@@ -216,7 +216,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                         
                     } else if rotation.x <= -1 {
                         //Up
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.02)
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.03)
                         
                         if self?.planeImageView.image != self?.planeTopImage {
                             self?.planeImageView.image = self?.planeTopImage
@@ -226,11 +226,11 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                     
                     if self?.currentXPosition > 0.05 {
                         var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = 0.02
+                        vector?.dx = 0.03
                         self?.gravityBehavior.gravityDirection = vector!
                     } else if self?.currentXPosition < -0.05 {
                         var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = -0.02
+                        vector?.dx = -0.03
                         self?.gravityBehavior.gravityDirection = vector!
                     } else {
                         var vector = self?.gravityBehavior.gravityDirection
