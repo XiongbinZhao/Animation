@@ -18,21 +18,23 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     private let planeMiddleImage = UIImage(named: "plane1")
     private let planeBottomImage = UIImage(named: "plane2")
     private let planeImageView = UIImageView()
-    
+    private let cityImagesContainer = UIView()
+    private let sunImagesContainer = UIView()
+    private let sunImageView = UIImageView(image: UIImage(named: "Sun"))
     private let cloudImagesContainer = UIView()
+    private let smallCloudImagesContainer = UIView()
     private let largeCloudsLayer = CALayer()
     private let mediumCloudsLayer = CALayer()
     private let smallCloudsLayer = CALayer()
     
-    private let cityImagesContainer = UIView()
-    
-    private let sunImagesContainer = UIView()
-    private let sunImageView = UIImageView(image: UIImage(named: "Sun"))
-    
     private var gravityBehavior: UIGravityBehavior!
-    private let gravityAnimator = UIDynamicAnimator()
+    private let planeAnimator = UIDynamicAnimator()
     
     private let motionManager = CMMotionManager()
+    
+    private var currentZPosition: Double?
+    private var currentXPosition: Double = 0.0
+    private var zPositionDiff: Double = 0.0
     
     deinit {
         motionManager.stopAccelerometerUpdates()
@@ -77,6 +79,8 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         let cloudHeightRatio = CGFloat(161.00/568.00)
         cloudImagesContainer.frame.size = CGSize(width: frame.width * 2, height: frame.height * cloudHeightRatio)
         cloudImagesContainer.frame.origin = CGPoint(x: 0, y: cityImagesContainer.frame.origin.y - cloudImagesContainer.frame.height - 30)
+        smallCloudImagesContainer.frame.size = CGSize(width: frame.width * 2, height: frame.height * cloudHeightRatio)
+        smallCloudImagesContainer.frame.origin = CGPoint(x: 0, y: cityImagesContainer.frame.origin.y - cloudImagesContainer.frame.height - 30)
         
         largeCloudsLayer.frame = CGRect(x: 0, y: 0, width: cloudImagesContainer.frame.width, height: cloudImagesContainer.frame.height)
         mediumCloudsLayer.frame = CGRect(x: 0, y: 0, width: cloudImagesContainer.frame.width, height: cloudImagesContainer.frame.height)
@@ -119,7 +123,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         smallCloudsLayer.addSublayer(smallLayer1)
         smallCloudsLayer.addSublayer(smallLayer2)
         
-        cloudImagesContainer.layer.addSublayer(smallCloudsLayer)
+        smallCloudImagesContainer.layer.addSublayer(smallCloudsLayer)
         cloudImagesContainer.layer.addSublayer(mediumCloudsLayer)
         cloudImagesContainer.layer.addSublayer(largeCloudsLayer)
 
@@ -146,6 +150,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         planeImageView.frame.origin = CGPoint(x: 20, y: cloudImagesContainer.center.y - planeImageView.frame.height/2)
         
         addSubview(sunImageView)
+        addSubview(smallCloudImagesContainer)
         addSubview(planeImageView)
         addSubview(cloudImagesContainer)
         
@@ -167,10 +172,10 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         searchingLabel.adjustsFontSizeToFitWidth = true
         addSubview(searchingLabel)
         
-        //Gravity Behavior
+        //Plane Dynamic Animation Behavior
         gravityBehavior = UIGravityBehavior(items: [planeImageView])
         gravityBehavior.magnitude = 0.0
-        self.gravityAnimator.addBehavior(gravityBehavior)
+        self.planeAnimator.addBehavior(gravityBehavior)
         
         let planeBoundaryOffset = CGFloat(3.0)
         
@@ -179,14 +184,19 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         let rightUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
         let leftLowerCloudPoint = CGPoint(x: 0, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
         let rightLowerCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
+        let planeRightUpperPoint = CGPoint(x: cloudImagesContainer.frame.width * 0.375, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
+        let planeRightLowerPoint = CGPoint(x: cloudImagesContainer.frame.width * 0.375, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
+        
         collisionBehavior.addBoundaryWithIdentifier("upperBoundary", fromPoint: leftUpperCloudPoint, toPoint: rightUpperCloudPoint)
         collisionBehavior.addBoundaryWithIdentifier("lowerBoundary", fromPoint: leftLowerCloudPoint, toPoint: rightLowerCloudPoint)
+        collisionBehavior.addBoundaryWithIdentifier("leftBoundary", fromPoint: leftUpperCloudPoint, toPoint: leftLowerCloudPoint)
+        collisionBehavior.addBoundaryWithIdentifier("rightBoundary", fromPoint: planeRightUpperPoint, toPoint: planeRightLowerPoint)
         collisionBehavior.collisionDelegate = self
-        self.gravityAnimator.addBehavior(collisionBehavior)
+        self.planeAnimator.addBehavior(collisionBehavior)
         
         let itemBehavior = UIDynamicItemBehavior(items: [planeImageView])
         itemBehavior.elasticity = 0.0
-        self.gravityAnimator.addBehavior(itemBehavior)
+        self.planeAnimator.addBehavior(itemBehavior)
 
         //CMMotionManager
         if motionManager.accelerometerAvailable {
@@ -213,8 +223,32 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
                         }
                         
                     }
+                    
+                    if self?.currentXPosition > 0.05 {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = 0.02
+                        self?.gravityBehavior.gravityDirection = vector!
+                    } else if self?.currentXPosition < -0.05 {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = -0.02
+                        self?.gravityBehavior.gravityDirection = vector!
+                    } else {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = 0.0
+                        self?.gravityBehavior.gravityDirection = vector!
+                    }
+                    
                 }
             })
+            
+            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
+                [weak self] (data: CMAccelerometerData?, error: NSError?) in
+                if let acceleration = data?.acceleration {
+                    self?.currentXPosition = acceleration.x
+                }
+            })
+            
+            
         }
     }
     
@@ -298,10 +332,12 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     
     func collisionBehavior(behavior: UICollisionBehavior, endedContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?)
     {
-        if let identifier = identifier as? String where identifier == "upperBoundary"{
-            self.planeImageView.image = planeBottomImage
-        } else {
-            self.planeImageView.image = planeTopImage
+        if let identifier = identifier as? String {
+            if identifier == "upperBoundary" {
+                self.planeImageView.image = planeBottomImage
+            } else if identifier == "lowerBoundary" {
+                self.planeImageView.image = planeTopImage
+            }
         }
     }
 }
