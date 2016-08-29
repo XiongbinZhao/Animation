@@ -20,6 +20,9 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     private let planeImageView = UIImageView()
     
     private let cloudImagesContainer = UIView()
+    private let largeCloudsLayer = CALayer()
+    private let mediumCloudsLayer = CALayer()
+    private let smallCloudsLayer = CALayer()
     
     private let cityImagesContainer = UIView()
     
@@ -75,18 +78,51 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         cloudImagesContainer.frame.size = CGSize(width: frame.width * 2, height: frame.height * cloudHeightRatio)
         cloudImagesContainer.frame.origin = CGPoint(x: 0, y: cityImagesContainer.frame.origin.y - cloudImagesContainer.frame.height - 30)
         
-        guard let cloudImage = UIImage(named: "clouds") else {
+        largeCloudsLayer.frame = CGRect(x: 0, y: 0, width: cloudImagesContainer.frame.width, height: cloudImagesContainer.frame.height)
+        mediumCloudsLayer.frame = CGRect(x: 0, y: 0, width: cloudImagesContainer.frame.width, height: cloudImagesContainer.frame.height)
+        smallCloudsLayer.frame = CGRect(x: 0, y: 0, width: cloudImagesContainer.frame.width, height: cloudImagesContainer.frame.height)
+        
+        guard let largeCloudImage = UIImage(named: "largeClouds"), mediumCloudImage = UIImage(named:"mediumClouds"), smallCloudImage = UIImage(named:"smallClouds") else {
             return
         }
         
-        let cloudImageView1 = UIImageView(frame:CGRect(x: 0, y: 0, width: frame.width, height: cloudImagesContainer.frame.height))
-        cloudImageView1.image = cloudImage
+        let leftFrame = CGRect(x: 0, y: 0, width: frame.width, height: cloudImagesContainer.frame.height)
+        let rightFrame = CGRect(x: leftFrame.origin.x + leftFrame.width + 30, y: 0, width: frame.width, height: cloudImagesContainer.frame.height)
         
-        let cloudImageView2 = UIImageView(frame: CGRect(x: cloudImageView1.frame.origin.x + cloudImageView1.frame.width + 30, y: 0, width: frame.width, height: cloudImagesContainer.frame.height))
-        cloudImageView2.image = cloudImage
+        let largeLayer1 = CALayer()
+        largeLayer1.contents = largeCloudImage.CGImage
+        largeLayer1.frame = leftFrame
+        let largeLayer2 = CALayer()
+        largeLayer2.contents = largeCloudImage.CGImage
+        largeLayer2.frame = rightFrame
         
-        cloudImagesContainer.addSubview(cloudImageView1)
-        cloudImagesContainer.addSubview(cloudImageView2)
+        largeCloudsLayer.addSublayer(largeLayer1)
+        largeCloudsLayer.addSublayer(largeLayer2)
+        
+        let mediumLayer1 = CALayer()
+        mediumLayer1.contents = mediumCloudImage.CGImage
+        mediumLayer1.frame = leftFrame
+        let mediumLayer2 = CALayer()
+        mediumLayer2.contents = mediumCloudImage.CGImage
+        mediumLayer2.frame = rightFrame
+        
+        mediumCloudsLayer.addSublayer(mediumLayer1)
+        mediumCloudsLayer.addSublayer(mediumLayer2)
+        
+        let smallLayer1 = CALayer()
+        smallLayer1.contents = smallCloudImage.CGImage
+        smallLayer1.frame = leftFrame
+        let smallLayer2 = CALayer()
+        smallLayer2.contents = smallCloudImage.CGImage
+        smallLayer2.frame = rightFrame
+        
+        smallCloudsLayer.addSublayer(smallLayer1)
+        smallCloudsLayer.addSublayer(smallLayer2)
+        
+        cloudImagesContainer.layer.addSublayer(smallCloudsLayer)
+        cloudImagesContainer.layer.addSublayer(mediumCloudsLayer)
+        cloudImagesContainer.layer.addSublayer(largeCloudsLayer)
+
         
         //Sun Image
         let widthRatio = CGFloat(106.00/704.00)
@@ -196,8 +232,14 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         cloudAnim.repeatCount = Float.infinity
         cloudAnim.fillMode = kCAFillModeForwards
         cloudAnim.removedOnCompletion = false
-        cloudImagesContainer.layer.addAnimation(cloudAnim, forKey: "Clouds")
+        largeCloudsLayer.addAnimation(cloudAnim, forKey: "largeClouds")
         
+        cloudAnim.duration = 8
+        mediumCloudsLayer.addAnimation(cloudAnim, forKey: "mediumClouds")
+        
+        cloudAnim.duration = 16
+        smallCloudsLayer.addAnimation(cloudAnim, forKey: "smallClouds")
+
         //Animation for sun
         let sunAnim1 = CABasicAnimation(keyPath: "position.x")
         sunAnim1.toValue = -self.sunImageView.frame.width
