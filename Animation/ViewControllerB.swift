@@ -35,8 +35,8 @@ class ViewControllerB: UIViewController {
     }
     
     @IBAction func dismiss(sender: AnyObject) {
-        mView.startAnimating()
-//        self.dismissViewControllerAnimated(true, completion: nil)
+//        mView.startAnimating()
+        self.dismissViewControllerAnimated(true, completion: nil)
     }
 
 }

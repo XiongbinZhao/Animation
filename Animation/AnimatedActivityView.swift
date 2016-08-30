@@ -27,17 +27,20 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     private let mediumCloudsLayer = CALayer()
     private let smallCloudsLayer = CALayer()
     
-    private var gravityBehavior: UIGravityBehavior!
+    private var dynamicBehavior: UIDynamicItemBehavior!
     private let planeAnimator = UIDynamicAnimator()
     
     private let motionManager = CMMotionManager()
+    private var originPitch: Double?
     
-    private var currentZPosition: Double?
-    private var currentXPosition: Double = 0.0
-    private var zPositionDiff: Double = 0.0
+    private let planeMovingSpeed: CGFloat = 50.0
     
     deinit {
         stopMotionManager()
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
     }
     
     override init(frame: CGRect) {
@@ -173,35 +176,11 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         addSubview(searchingLabel)
         
         //Plane Dynamic Animation Behavior
-        gravityBehavior = UIGravityBehavior(items: [planeImageView])
-        gravityBehavior.magnitude = 0.0
-        self.planeAnimator.addBehavior(gravityBehavior)
-        
-        let planeBoundaryOffset = CGFloat(3.0)
-        
-        let collisionBehavior = UICollisionBehavior(items: [planeImageView])
-        let leftUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.origin.x, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
-        let rightUpperCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
-        let leftLowerCloudPoint = CGPoint(x: 0, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
-        let rightLowerCloudPoint = CGPoint(x: cloudImagesContainer.frame.width, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
-        let planeRightUpperPoint = CGPoint(x: cloudImagesContainer.frame.width * 0.375, y: cloudImagesContainer.frame.origin.y + planeBoundaryOffset)
-        let planeRightLowerPoint = CGPoint(x: cloudImagesContainer.frame.width * 0.375, y: cloudImagesContainer.frame.origin.y + cloudImagesContainer.frame.height - planeBoundaryOffset)
-        
-        collisionBehavior.addBoundaryWithIdentifier("upperBoundary", fromPoint: leftUpperCloudPoint, toPoint: rightUpperCloudPoint)
-        collisionBehavior.addBoundaryWithIdentifier("lowerBoundary", fromPoint: leftLowerCloudPoint, toPoint: rightLowerCloudPoint)
-        collisionBehavior.addBoundaryWithIdentifier("leftBoundary", fromPoint: leftUpperCloudPoint, toPoint: leftLowerCloudPoint)
-        collisionBehavior.addBoundaryWithIdentifier("rightBoundary", fromPoint: planeRightUpperPoint, toPoint: planeRightLowerPoint)
-        collisionBehavior.collisionDelegate = self
-        self.planeAnimator.addBehavior(collisionBehavior)
-        
-        let itemBehavior = UIDynamicItemBehavior(items: [planeImageView])
-        itemBehavior.elasticity = 0.0
-        self.planeAnimator.addBehavior(itemBehavior)
-
-    }
-    
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
+        dynamicBehavior = UIDynamicItemBehavior(items: [planeImageView])
+        dynamicBehavior.addLinearVelocity(CGPoint(x:0, y:0), forItem: planeImageView)
+        dynamicBehavior.elasticity = 0.0
+        dynamicBehavior.resistance = 0.0
+        self.planeAnimator.addBehavior(dynamicBehavior)
     }
     
     func startAnimating() {
@@ -285,78 +264,73 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         stopMotionManager()
     }
     
-    private func stopMotionManager() {
-        motionManager.stopAccelerometerUpdates()
-        motionManager.stopGyroUpdates()
-    }
-    
     private func startMotionManager() {
         //CMMotionManager
-        if motionManager.accelerometerAvailable {
-            motionManager.accelerometerUpdateInterval = 0.2
-            motionManager.gyroUpdateInterval = 0.2
-            
-            motionManager.startGyroUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
-                [weak self] (data: CMGyroData?, error: NSError?) in
-                if let rotation = data?.rotationRate {
-                    if rotation.x >= 1 {
-                        //Down
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.03)
-                        
-                        if self?.planeImageView.image != self?.planeBottomImage {
-                            self?.planeImageView.image = self?.planeBottomImage
+        if motionManager.deviceMotionAvailable {
+            motionManager.deviceMotionUpdateInterval = 0.02
+
+            motionManager.startDeviceMotionUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
+                [weak self] (deviceMotion: CMDeviceMotion?, error: NSError?) in
+                
+                        if let data = deviceMotion {
+                            guard let weakself = self else {
+                                return
+                            }
+                            
+                            var velocity = weakself.dynamicBehavior.linearVelocityForItem(weakself.planeImageView)
+                            let planeWithinUpperBoundary = weakself.planeImageView.frame.origin.y >= weakself.cloudImagesContainer.frame.origin.y + 3.0
+                            let planeWithinLowerBoundary = weakself.planeImageView.frame.origin.y + weakself.planeImageView.frame.height <= weakself.cloudImagesContainer.frame.origin.y + weakself.cloudImagesContainer.frame.height - 3.0
+                            let planeWithinRightBoundary = weakself.planeImageView.frame.origin.x + weakself.planeImageView.frame.width <= weakself.cloudImagesContainer.frame.width * 0.375
+                            let planeWithinLeftBoundary = weakself.planeImageView.frame.origin.x >= 3
+                            
+                            if let originPitch = weakself.originPitch {
+                                // Moving Upward or Downward
+                                if data.attitude.pitch - originPitch < -0.2 && planeWithinUpperBoundary {
+                                    //Up
+                                    velocity.y = -weakself.planeMovingSpeed - velocity.y
+                                    if weakself.planeImageView.image != weakself.planeBottomImage {
+                                        weakself.planeImageView.image = weakself.planeBottomImage
+                                    }
+                                    
+                                } else if data.attitude.pitch - originPitch > 0.2 && planeWithinLowerBoundary {
+                                    //Down
+                                    velocity.y = weakself.planeMovingSpeed - velocity.y
+                                    if weakself.planeImageView.image != weakself.planeTopImage {
+                                        weakself.planeImageView.image = weakself.planeTopImage
+                                    }
+                                    
+                                } else {
+                                    velocity.y = 0 - velocity.y
+                                    if weakself.planeImageView.image != weakself.planeMiddleImage {
+                                        weakself.planeImageView.image = weakself.planeMiddleImage
+                                    }
+                                }
+                            } else {
+                                weakself.originPitch = data.attitude.pitch
+                            }
+                            
+                            //Moving Forward or Backward
+                            if data.attitude.roll >= 0.2 && planeWithinRightBoundary {
+                                //Forward
+                                velocity.x = weakself.planeMovingSpeed - velocity.x
+                                
+                            } else if data.attitude.roll <= -0.2 && planeWithinLeftBoundary{
+                                //Backward
+                                velocity.x = -weakself.planeMovingSpeed - velocity.x
+                                
+                            } else {
+                                velocity.x = 0 - velocity.x
+                            }
+                            
+                            weakself.dynamicBehavior.addLinearVelocity(velocity, forItem: weakself.planeImageView)
                         }
-                        
-                    } else if rotation.x <= -1 {
-                        //Up
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.03)
-                        
-                        if self?.planeImageView.image != self?.planeTopImage {
-                            self?.planeImageView.image = self?.planeTopImage
-                        }
-                        
-                    }
-                    
-                    if self?.currentXPosition > 0.05 {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = 0.03
-                        self?.gravityBehavior.gravityDirection = vector!
-                    } else if self?.currentXPosition < -0.05 {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = -0.03
-                        self?.gravityBehavior.gravityDirection = vector!
-                    } else {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = 0.0
-                        self?.gravityBehavior.gravityDirection = vector!
-                    }
-                    
-                }
-                })
+            })
             
-            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
-                [weak self] (data: CMAccelerometerData?, error: NSError?) in
-                if let acceleration = data?.acceleration {
-                    self?.currentXPosition = acceleration.x
-                }
-                })
         }
+        
     }
     
-    //MARK: UICollisionBehabivor Delegate
-    func collisionBehavior(behavior: UICollisionBehavior, beganContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?, atPoint p: CGPoint)
-    {
-        self.planeImageView.image = planeMiddleImage
-    }
-    
-    func collisionBehavior(behavior: UICollisionBehavior, endedContactForItem item: UIDynamicItem, withBoundaryIdentifier identifier: NSCopying?)
-    {
-        if let identifier = identifier as? String {
-            if identifier == "upperBoundary" {
-                self.planeImageView.image = planeBottomImage
-            } else if identifier == "lowerBoundary" {
-                self.planeImageView.image = planeTopImage
-            }
-        }
+    private func stopMotionManager() {
+        motionManager.stopAccelerometerUpdates()
     }
 }
