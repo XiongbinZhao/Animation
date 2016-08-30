@@ -31,11 +31,12 @@ class ViewControllerB: UIViewController {
     }
     
     @IBAction func buttonPressed(sender: AnyObject) {
-
+        mView.stopAnimating()
     }
     
     @IBAction func dismiss(sender: AnyObject) {
-        self.dismissViewControllerAnimated(true, completion: nil)
+        mView.startAnimating()
+//        self.dismissViewControllerAnimated(true, completion: nil)
     }
 
 }

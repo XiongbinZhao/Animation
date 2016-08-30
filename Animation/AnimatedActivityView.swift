@@ -37,7 +37,7 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     private var zPositionDiff: Double = 0.0
     
     deinit {
-        motionManager.stopAccelerometerUpdates()
+        stopMotionManager()
     }
     
     override init(frame: CGRect) {
@@ -198,58 +198,6 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         itemBehavior.elasticity = 0.0
         self.planeAnimator.addBehavior(itemBehavior)
 
-        //CMMotionManager
-        if motionManager.accelerometerAvailable {
-            motionManager.accelerometerUpdateInterval = 0.2
-            motionManager.gyroUpdateInterval = 0.2
-            
-            motionManager.startGyroUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
-                [weak self] (data: CMGyroData?, error: NSError?) in
-                if let rotation = data?.rotationRate {
-                    if rotation.x >= 1 {
-                        //Down
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.03)
-                        
-                        if self?.planeImageView.image != self?.planeBottomImage {
-                            self?.planeImageView.image = self?.planeBottomImage
-                        }
-                        
-                    } else if rotation.x <= -1 {
-                        //Up
-                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.03)
-                        
-                        if self?.planeImageView.image != self?.planeTopImage {
-                            self?.planeImageView.image = self?.planeTopImage
-                        }
-                        
-                    }
-                    
-                    if self?.currentXPosition > 0.05 {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = 0.03
-                        self?.gravityBehavior.gravityDirection = vector!
-                    } else if self?.currentXPosition < -0.05 {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = -0.03
-                        self?.gravityBehavior.gravityDirection = vector!
-                    } else {
-                        var vector = self?.gravityBehavior.gravityDirection
-                        vector?.dx = 0.0
-                        self?.gravityBehavior.gravityDirection = vector!
-                    }
-                    
-                }
-            })
-            
-            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
-                [weak self] (data: CMAccelerometerData?, error: NSError?) in
-                if let acceleration = data?.acceleration {
-                    self?.currentXPosition = acceleration.x
-                }
-            })
-            
-            
-        }
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -257,6 +205,8 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
     }
     
     func startAnimating() {
+        
+        startMotionManager()
         
         //Animation for clouds
         let cloudAnim = CABasicAnimation(keyPath: "transform.translation.x")
@@ -322,6 +272,75 @@ class AnimatedActivityIndicatorView: UIView, UICollisionBehaviorDelegate {
         group.removedOnCompletion = false
         
         self.cityImagesContainer.layer.addAnimation(group, forKey: "City")
+        
+    }
+    
+    func stopAnimating() {
+        largeCloudsLayer.removeAllAnimations()
+        mediumCloudsLayer.removeAllAnimations()
+        smallCloudsLayer.removeAllAnimations()
+        sunImageView.layer.removeAllAnimations()
+        cityImagesContainer.layer.removeAllAnimations()
+        
+        stopMotionManager()
+    }
+    
+    private func stopMotionManager() {
+        motionManager.stopAccelerometerUpdates()
+        motionManager.stopGyroUpdates()
+    }
+    
+    private func startMotionManager() {
+        //CMMotionManager
+        if motionManager.accelerometerAvailable {
+            motionManager.accelerometerUpdateInterval = 0.2
+            motionManager.gyroUpdateInterval = 0.2
+            
+            motionManager.startGyroUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
+                [weak self] (data: CMGyroData?, error: NSError?) in
+                if let rotation = data?.rotationRate {
+                    if rotation.x >= 1 {
+                        //Down
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: 0.03)
+                        
+                        if self?.planeImageView.image != self?.planeBottomImage {
+                            self?.planeImageView.image = self?.planeBottomImage
+                        }
+                        
+                    } else if rotation.x <= -1 {
+                        //Up
+                        self?.gravityBehavior.gravityDirection = CGVector(dx: 0.0, dy: -0.03)
+                        
+                        if self?.planeImageView.image != self?.planeTopImage {
+                            self?.planeImageView.image = self?.planeTopImage
+                        }
+                        
+                    }
+                    
+                    if self?.currentXPosition > 0.05 {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = 0.03
+                        self?.gravityBehavior.gravityDirection = vector!
+                    } else if self?.currentXPosition < -0.05 {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = -0.03
+                        self?.gravityBehavior.gravityDirection = vector!
+                    } else {
+                        var vector = self?.gravityBehavior.gravityDirection
+                        vector?.dx = 0.0
+                        self?.gravityBehavior.gravityDirection = vector!
+                    }
+                    
+                }
+                })
+            
+            motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: {
+                [weak self] (data: CMAccelerometerData?, error: NSError?) in
+                if let acceleration = data?.acceleration {
+                    self?.currentXPosition = acceleration.x
+                }
+                })
+        }
     }
     
     //MARK: UICollisionBehabivor Delegate
